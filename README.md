@@ -119,6 +119,14 @@ Each binary bundles the Bun runtime (60–80 MB), so recipients don't need Bun i
 
 On macOS, a downloaded binary may be quarantined. Clear the flag with `xattr -d com.apple.quarantine jev-proxy`.
 
+### Releases
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`. The workflow tests the code, builds every platform binary and publishes a GitHub release with the archives and `SHA256SUMS`.
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0
+```
+
 ## Test
 
 ```sh

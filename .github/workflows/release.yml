@@ -1,0 +1,35 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # macOS runner so the darwin binaries get a native code signature; it cross-compiles the rest.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun test
+
+      - run: bun run build:all
+
+      - name: Package
+        working-directory: dist
+        run: |
+          mkdir release
+          for f in jev-proxy-linux-x64 jev-proxy-linux-arm64 jev-proxy-darwin-x64 jev-proxy-darwin-arm64; do
+            tar -czf "release/$f.tar.gz" "$f"
+          done
+          zip -q -j release/jev-proxy-windows-x64.zip jev-proxy-windows-x64.exe
+          cd release && shasum -a 256 * > SHA256SUMS
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/release/* --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
