@@ -1,0 +1,27 @@
+# build output (bun build --compile)
+dist/
+*.bun-build
+
+# dependencies
+node_modules/
+
+# local env / secrets
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+logs/
+
+# test coverage
+coverage/
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# planning docs (kept local)
+docs/superpowers/

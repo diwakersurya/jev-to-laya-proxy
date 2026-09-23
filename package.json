@@ -1,0 +1,18 @@
+{
+  "name": "jev-proxy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun proxy.ts",
+    "dev": "LOG=1 bun --watch proxy.ts",
+    "test": "bun test",
+    "build": "bun build --compile --minify proxy.ts --outfile dist/jev-proxy",
+    "build:linux-x64": "bun build --compile --minify --target=bun-linux-x64 proxy.ts --outfile dist/jev-proxy-linux-x64",
+    "build:linux-arm64": "bun build --compile --minify --target=bun-linux-arm64 proxy.ts --outfile dist/jev-proxy-linux-arm64",
+    "build:darwin-x64": "bun build --compile --minify --target=bun-darwin-x64 proxy.ts --outfile dist/jev-proxy-darwin-x64",
+    "build:darwin-arm64": "bun build --compile --minify --target=bun-darwin-arm64 proxy.ts --outfile dist/jev-proxy-darwin-arm64",
+    "build:windows-x64": "bun build --compile --minify --target=bun-windows-x64 proxy.ts --outfile dist/jev-proxy-windows-x64.exe",
+    "build:all": "bun run build:linux-x64 && bun run build:linux-arm64 && bun run build:darwin-x64 && bun run build:darwin-arm64 && bun run build:windows-x64"
+  }
+}

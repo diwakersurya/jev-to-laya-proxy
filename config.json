@@ -1,0 +1,29 @@
+{
+  "port": 8787,
+  "apiKey": null,
+  "backend": "laya",
+  "backends": {
+    "laya": {
+      "url": "http://127.0.0.1:8770",
+      "predictPath": "/api/predict",
+      "healthPath": "/api/health",
+      "headers": {},
+      "extraBody": {},
+      "modelMap": {
+        "jev-latest": null,
+        "jev-preview": null,
+        "laya-english": "english",
+        "laya-multilingual": "multilingual",
+        "laya-typed": "typed-decisions"
+      },
+      "defaultModel": null
+    },
+    "typesafe": {
+      "url": "https://api.typesafe.ai",
+      "predictPath": "/v1/systemone",
+      "headers": { "Authorization": "Bearer ${TYPESAFE_API_KEY}" },
+      "modelMap": { "jev-latest": "jev-latest", "jev-preview": "jev-preview" },
+      "defaultModel": "jev-latest"
+    }
+  }
+}
