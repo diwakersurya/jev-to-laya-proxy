@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jev-to-laya-proxy</title>
+<meta name="description" content="A single-file proxy that speaks the TypeSafe Jev API and answers with a Laya model running on your machine.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Schibsted+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #E9EDF2;
+  --panel: #F6F8FA;
+  --ink: #15203A;
+  --muted: #5B6478;
+  --line: #CBD2DC;
+  --jev: #2E58E6;
+  --laya: #B7851A;
+  --track: #D9DFE7;
+  --code-bg: #15203A;
+  --code-ink: #E3E8F0;
+  --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s5: 40px; --s6: 64px; --s7: 104px;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "Schibsted Grotesk", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0F1626; --panel: #161F33; --ink: #E3E8F0; --muted: #98A2B6; --line: #29344C;
+    --jev: #7A98FF; --laya: #E0B24A; --track: #25304A; --code-bg: #0A101D; --code-ink: #E3E8F0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0F1626; --panel: #161F33; --ink: #E3E8F0; --muted: #98A2B6; --line: #29344C;
+  --jev: #7A98FF; --laya: #E0B24A; --track: #25304A; --code-bg: #0A101D; --code-ink: #E3E8F0;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 400 17px/1.6 var(--sans);
+}
+a { color: var(--jev); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--jev); outline-offset: 3px; border-radius: 2px; }
+code { font-family: var(--mono); font-size: .88em; }
+p code, li code, td code { background: var(--track); padding: 1px 5px; border-radius: 3px; }
+pre code { background: none; padding: 0; border-radius: 0; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--s3); }
+@media (min-width: 720px) { .wrap { padding: 0 var(--s5); } }
+
+/* top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s4) 0; }
+.brand { font-weight: 800; letter-spacing: -.01em; color: var(--ink); text-decoration: none; }
+.brand span { color: var(--muted); font-weight: 500; }
+.top nav { display: flex; gap: var(--s4); font-size: 15px; }
+@media (max-width: 520px) { .top nav a[href="#start"] { display: none; } .top nav { gap: var(--s3); } }
+.top nav a { color: var(--ink); text-decoration: none; }
+.top nav a:hover { color: var(--jev); }
+
+/* hero */
+.hero > *, .two > * { min-width: 0; }
+.hero { display: grid; gap: var(--s5); padding: var(--s5) 0 var(--s6); align-items: start; }
+@media (min-width: 960px) { .hero { grid-template-columns: 5fr 6fr; gap: var(--s6); padding-top: var(--s6); } }
+h1 {
+  font-size: clamp(40px, 6.4vw, 72px); line-height: 1.02; letter-spacing: -.035em;
+  font-weight: 800; margin: 0 0 var(--s4); text-wrap: balance;
+}
+.lede { font-size: 20px; line-height: 1.5; color: var(--muted); max-width: 34ch; margin: 0 0 var(--s5); }
+.lede strong { color: var(--ink); font-weight: 500; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
+.btn {
+  display: inline-block; padding: 12px 22px; border-radius: 6px; font-weight: 700; text-decoration: none;
+  background: var(--ink); color: var(--paper); border: 2px solid var(--ink);
+}
+.btn:hover { background: var(--jev); border-color: var(--jev); color: #fff; }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn.ghost:hover { color: #fff; }
+
+/* the wire: hero log panel */
+.wire { background: var(--code-bg); color: var(--code-ink); border-radius: 10px; overflow: hidden; }
+.wire-head { display: flex; justify-content: space-between; gap: var(--s3); padding: 12px var(--s3); font: 400 13px/1.4 var(--mono); color: #98A2B6; border-bottom: 1px solid #29344C; }
+.hops { list-style: none; margin: 0; padding: var(--s3) 0; font: 400 13px/1.55 var(--mono); }
+.hop { display: grid; grid-template-columns: 124px 1fr; gap: var(--s3); padding: 6px var(--s3); }
+.hop .dir { font-weight: 600; white-space: nowrap; }
+.hop .body { color: #B9C2D3; overflow-wrap: anywhere; }
+.hop.j .dir { color: #8FA8FF; }
+.hop.l .dir { color: #E6B84F; }
+.hop .body b { color: var(--code-ink); font-weight: 600; }
+@media (max-width: 520px) { .hop { grid-template-columns: 1fr; gap: 0; } }
+
+.answers { padding: var(--s3) var(--s3) var(--s4); border-top: 1px solid #29344C; display: grid; gap: var(--s3); }
+.ans-name { font: 600 13px/1.4 var(--mono); color: var(--code-ink); margin-bottom: 6px; }
+.ans-name span { color: #98A2B6; font-weight: 400; }
+.bar { display: grid; grid-template-columns: 84px 1fr 52px; gap: var(--s2); align-items: center; font: 400 12px/1.4 var(--mono); color: #B9C2D3; }
+.bar .track { height: 8px; background: #25304A; border-radius: 4px; overflow: hidden; }
+.bar .fill { display: block; height: 100%; width: var(--p); background: #8FA8FF; border-radius: 4px; }
+.bar .val { text-align: right; }
+
+/* load sequence: hops print in order, then bars fill */
+@media (prefers-reduced-motion: no-preference) {
+  .js .hop { opacity: 0; transform: translateY(4px); animation: print .35s ease-out forwards; animation-delay: calc(var(--i) * .55s + .2s); }
+  .js .bar .fill { width: 0; animation: fill .7s cubic-bezier(.2,.7,.2,1) forwards; animation-delay: 2.6s; }
+  @keyframes print { to { opacity: 1; transform: none; } }
+  @keyframes fill { to { width: var(--p); } }
+}
+
+/* sections */
+section.block { padding: var(--s6) 0; border-top: 1px solid var(--line); }
+h2 { font-size: clamp(28px, 3.6vw, 40px); line-height: 1.1; letter-spacing: -.025em; font-weight: 800; margin: 0 0 var(--s4); }
+h3 { font-size: 19px; margin: 0 0 var(--s2); letter-spacing: -.01em; }
+.prose { max-width: 66ch; }
+.prose p { margin: 0 0 var(--s3); }
+.muted { color: var(--muted); }
+
+.two { display: grid; gap: var(--s5); }
+@media (min-width: 900px) { .two { grid-template-columns: 1fr 1fr; gap: var(--s6); } }
+
+/* how it maps: a legend of the two sides */
+.sides { display: grid; gap: var(--s4); margin-top: var(--s5); }
+@media (min-width: 720px) { .sides { grid-template-columns: 1fr 1fr; } }
+.side { border-left: 4px solid var(--jev); padding: 2px 0 2px var(--s3); }
+.side.l { border-color: var(--laya); }
+.side p { margin: 0; color: var(--muted); }
+
+/* steps: a real sequence, so numbered */
+ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; gap: var(--s5); }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 44px 1fr; gap: var(--s3); min-width: 0; }
+ol.steps > li::before {
+  content: counter(s); width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--ink);
+  display: grid; place-items: center; font-weight: 700; font-size: 15px;
+}
+ol.steps > li > div { min-width: 0; }
+ol.steps p { margin: 0 0 var(--s2); }
+
+pre {
+  position: relative; margin: 0; background: var(--code-bg); color: var(--code-ink);
+  font: 400 13.5px/1.6 var(--mono); padding: var(--s3) var(--s4) var(--s3) var(--s3);
+  border-radius: 8px; overflow-x: auto; tab-size: 2;
+}
+pre .c { color: #7F8AA0; }
+pre .k { color: #8FA8FF; }
+pre .s { color: #E6B84F; }
+.copy {
+  position: absolute; top: 8px; right: 8px; font: 500 12px var(--sans); color: #B9C2D3;
+  background: #25304A; border: 0; border-radius: 4px; padding: 4px 10px; cursor: pointer;
+}
+.copy:hover { color: #fff; }
+
+/* tables */
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 12px var(--s3) 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 700; color: var(--muted); font-size: 14px; }
+td a { font-weight: 500; }
+
+footer { padding: var(--s5) 0 var(--s6); border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s3); }
+footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <a class="brand" href="./">jev-to-laya<span>-proxy</span></a>
+  <nav aria-label="Primary">
+    <a href="#start">Quick start</a>
+    <a href="#download">Download</a>
+    <a href="https://github.com/diwakersurya/jev-to-laya-proxy">GitHub</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div>
+    <h1>Point your TypeSafe code at your own machine.</h1>
+    <p class="lede">jev-to-laya-proxy accepts <strong>Jev API requests</strong> and answers them with <strong>a Laya model running locally</strong>. Same questions, same response shape, no API key.</p>
+    <div class="actions">
+      <a class="btn" href="#download">Download</a>
+      <a class="btn ghost" href="https://github.com/diwakersurya/jev-to-laya-proxy">View source</a>
+    </div>
+  </div>
+
+  <figure class="wire" style="margin:0" aria-label="Log output from jev-proxy --log for one request">
+    <div class="wire-head"><span>$ ./jev-proxy --log</span><span>:8787</span></div>
+    <ol class="hops">
+      <li class="hop j" style="--i:0"><span class="dir">client→proxy</span><span class="body">POST /v1/systemone <b>"model":"jev-latest"</b> "state":"Help! My payouts have been failing for 3 days."</span></li>
+      <li class="hop l" style="--i:1"><span class="dir">proxy→backend</span><span class="body">POST 127.0.0.1:8770/api/predict <b>"model":null</b> <span style="opacity:.7">(Laya picks the model)</span></span></li>
+      <li class="hop l" style="--i:2"><span class="dir">backend→proxy</span><span class="body">200 answers + routing, action, latency_ms, device</span></li>
+      <li class="hop j" style="--i:3"><span class="dir">proxy→client</span><span class="body">200 381ms <b>{model, answers, usage}</b> <span style="opacity:.7">Laya extras removed</span></span></li>
+    </ol>
+    <div class="answers">
+      <div>
+        <div class="ans-name">department <span>choice</span></div>
+        <div class="bar"><span>billing</span><span class="track"><span class="fill" style="--p:81.3%"></span></span><span class="val">81.3%</span></div>
+        <div class="bar"><span>technical</span><span class="track"><span class="fill" style="--p:9.8%"></span></span><span class="val">9.8%</span></div>
+        <div class="bar"><span>sales</span><span class="track"><span class="fill" style="--p:8.9%"></span></span><span class="val">8.9%</span></div>
+      </div>
+      <div>
+        <div class="ans-name">is_urgent <span>noul</span></div>
+        <div class="bar"><span>yes</span><span class="track"><span class="fill" style="--p:74.2%"></span></span><span class="val">74.2%</span></div>
+      </div>
+    </div>
+  </figure>
+</section>
+
+<section class="block">
+  <div class="two">
+    <div class="prose">
+      <h2>What it does</h2>
+      <p>TypeSafe's Jev API takes some text (the <code>state</code>) and a set of typed questions, then returns an answer with a probability for each one. Laya uses almost the same format, but it runs on your laptop.</p>
+      <p>The proxy sits between them. It checks each request the way Jev would, renames the model to one Laya knows, forwards the call, and removes the fields Jev doesn't return. Code written for Jev, including the official SDKs, keeps working when you change the base URL.</p>
+    </div>
+    <div class="prose">
+      <h2>Three question types</h2>
+      <p><code>noul</code> is a yes-or-no question. It returns the probability that the answer is yes.</p>
+      <p><code>choice</code> picks one option from a list and returns a probability for every option.</p>
+      <p><code>score</code> places the text on an ordered rubric of 2 to 10 levels. It returns a weighted score and the probability of each level.</p>
+    </div>
+  </div>
+  <div class="sides">
+    <div class="side j"><h3>Your side speaks Jev</h3><p><code>POST /v1/systemone</code>, <code>GET /v1/models</code>, Bearer auth, and the 401, 422 and 529 error codes.</p></div>
+    <div class="side l"><h3>The backend can be anything Jev-like</h3><p>It's Laya by default. Switching to real TypeSafe, or another server, is a change to <code>config.json</code>.</p></div>
+  </div>
+</section>
+
+<section class="block" id="start">
+  <h2>Quick start</h2>
+  <ol class="steps">
+    <li><div>
+      <p>Start Laya locally. It should answer on port 8770.</p>
+<pre><code>curl http://127.0.0.1:8770/api/health</code></pre>
+    </div></li>
+    <li><div>
+      <p>Download the proxy for your platform, extract it, and run it with logging on.</p>
+<pre><code>tar -xzf jev-proxy-darwin-arm64.tar.gz
+xattr -d com.apple.quarantine jev-proxy-darwin-arm64   <span class="c"># macOS only</span>
+./jev-proxy-darwin-arm64 --log</code></pre>
+    </div></li>
+    <li><div>
+      <p>Send a Jev request to port 8787.</p>
+<pre><code>curl localhost:8787/v1/systemone \
+  -H <span class="s">'Content-Type: application/json'</span> \
+  -d <span class="s">'{
+    "state": "Help! My payouts have been failing for 3 days.",
+    "model": "jev-latest",
+    "questions": {
+      "is_urgent": { "type": "noul", "instructions": "Does this convey urgency?" }
+    }
+  }'</span></code></pre>
+    </div></li>
+    <li><div>
+      <p>Or point a TypeSafe SDK at it. Any API key works unless you set one in the config.</p>
+<pre><code><span class="k">const</span> client = <span class="k">new</span> TypeSafeClient({ baseURL: <span class="s">"http://localhost:8787"</span>, apiKey: <span class="s">"local"</span> });</code></pre>
+    </div></li>
+  </ol>
+</section>
+
+<section class="block" id="download">
+  <h2>Download</h2>
+  <p class="muted prose">Each binary includes the Bun runtime, so there's nothing else to install. These links always point to the latest release.</p>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th scope="col">Platform</th><th scope="col">File</th></tr></thead>
+    <tbody>
+      <tr><td>macOS, Apple Silicon</td><td><a href="https://github.com/diwakersurya/jev-to-laya-proxy/releases/latest/download/jev-proxy-darwin-arm64.tar.gz">jev-proxy-darwin-arm64.tar.gz</a></td></tr>
+      <tr><td>macOS, Intel</td><td><a href="https://github.com/diwakersurya/jev-to-laya-proxy/releases/latest/download/jev-proxy-darwin-x64.tar.gz">jev-proxy-darwin-x64.tar.gz</a></td></tr>
+      <tr><td>Linux, x64</td><td><a href="https://github.com/diwakersurya/jev-to-laya-proxy/releases/latest/download/jev-proxy-linux-x64.tar.gz">jev-proxy-linux-x64.tar.gz</a></td></tr>
+      <tr><td>Linux, ARM64</td><td><a href="https://github.com/diwakersurya/jev-to-laya-proxy/releases/latest/download/jev-proxy-linux-arm64.tar.gz">jev-proxy-linux-arm64.tar.gz</a></td></tr>
+      <tr><td>Windows, x64</td><td><a href="https://github.com/diwakersurya/jev-to-laya-proxy/releases/latest/download/jev-proxy-windows-x64.zip">jev-proxy-windows-x64.zip</a></td></tr>
+      <tr><td>Checksums</td><td><a href="https://github.com/diwakersurya/jev-to-laya-proxy/releases/latest/download/SHA256SUMS">SHA256SUMS</a></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="muted prose" style="margin-top:var(--s4)">To run from source instead, use <code>bun proxy.ts --log</code> in a clone of the repo.</p>
+</section>
+
+<section class="block">
+  <div class="two">
+    <div class="prose">
+      <h2>Configure</h2>
+      <p>Settings live in <code>config.json</code>. The binary has a copy built in, and a <code>config.json</code> in the folder you run from overrides it. Use <code>${VAR}</code> in any value to read it from the environment, so keys stay out of the file.</p>
+      <p>Environment variables: <code>PORT</code>, <code>BACKEND</code>, <code>CONFIG</code>, and <code>LOG=1</code>, which does the same as <code>--log</code>.</p>
+      <p>Every response carries an <code>x-served-by: jev-proxy</code> header, so you can confirm the proxy answered.</p>
+    </div>
+<pre><code>{
+  <span class="k">"backend"</span>: <span class="s">"laya"</span>,
+  <span class="k">"backends"</span>: {
+    <span class="k">"laya"</span>: {
+      <span class="k">"url"</span>: <span class="s">"http://127.0.0.1:8770"</span>,
+      <span class="k">"predictPath"</span>: <span class="s">"/api/predict"</span>,
+      <span class="k">"modelMap"</span>: {
+        <span class="k">"jev-latest"</span>: null,
+        <span class="k">"laya-english"</span>: <span class="s">"english"</span>
+      }
+    },
+    <span class="k">"typesafe"</span>: {
+      <span class="k">"url"</span>: <span class="s">"https://api.typesafe.ai"</span>,
+      <span class="k">"predictPath"</span>: <span class="s">"/v1/systemone"</span>,
+      <span class="k">"headers"</span>: {
+        <span class="k">"Authorization"</span>: <span class="s">"Bearer ${TYPESAFE_API_KEY}"</span>
+      }
+    }
+  }
+}</code></pre>
+  </div>
+
+  <h3 style="margin-top:var(--s6)">Model names</h3>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th scope="col">Send this <code>model</code></th><th scope="col">Laya uses</th></tr></thead>
+    <tbody>
+      <tr><td><code>jev-latest</code>, <code>jev-preview</code>, or any unknown name</td><td>Its own choice, based on the text's language</td></tr>
+      <tr><td><code>laya-english</code></td><td><code>english</code></td></tr>
+      <tr><td><code>laya-multilingual</code></td><td><code>multilingual</code></td></tr>
+      <tr><td><code>laya-typed</code></td><td><code>typed-decisions</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<footer>
+  <span>Built with Bun. One file, no dependencies.</span>
+  <span><a href="https://github.com/diwakersurya/jev-to-laya-proxy">Source</a> &nbsp; <a href="https://github.com/diwakersurya/jev-to-laya-proxy/releases">Releases</a> &nbsp; <a href="https://docs.typesafe.ai/api">Jev API docs</a></span>
+</footer>
+
+</div>
+<script>
+document.documentElement.classList.add('js');
+document.querySelectorAll('pre').forEach(pre => {
+  const b = document.createElement('button');
+  b.className = 'copy'; b.type = 'button'; b.textContent = 'Copy';
+  b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(pre.querySelector('code').innerText); b.textContent = 'Copied'; }
+    catch { b.textContent = 'Copy failed'; }
+    setTimeout(() => b.textContent = 'Copy', 1500);
+  });
+  pre.appendChild(b);
+});
+</script>
+</body>
+</html>
